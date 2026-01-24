@@ -1,0 +1,485 @@
+<template>
+  <Transition name="fade">
+    <div v-if="isOpen" class="modal-overlay">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3>新建订单申请</h3>
+          <button class="close-btn" @click="close">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-item">
+              <label>客户名称 <span class="req">*</span></label>
+              <input v-model="form.customer" placeholder="输入客户名称" />
+            </div>
+
+            <div class="form-item">
+              <label>订单编号 <span class="req">*</span></label>
+              <input v-model="form.orderId" placeholder="ORD-2026-XXX" />
+            </div>
+
+            <div class="form-item">
+              <label>交付截止日期 <span class="req">*</span></label>
+              <input type="date" v-model="form.deadline" class="date-input" />
+            </div>
+
+            <div class="form-item">
+              <label>优先级 <span class="req">*</span></label>
+              <select v-model="form.priority">
+                <option v-for="p in Object.values(Priority)" :key="p" :value="p">{{ p }}</option>
+              </select>
+            </div>
+
+            <div class="form-item">
+              <label>版本 Tag</label>
+              <input v-model="form.versionTag" placeholder="v1.0" />
+            </div>
+
+            <div class="form-item full-width">
+              <label>客户备注</label>
+              <textarea v-model="form.remark" rows="2" placeholder="填写特殊生产要求..."></textarea>
+            </div>
+          </div>
+
+          <div class="product-section">
+            <div class="section-header">
+              <h4>📦 产品明细</h4>
+              <button class="btn-add-text" @click="addNewProductLine">+ 添加条目</button>
+            </div>
+
+            <div v-for="(p, index) in form.products" :key="index" class="product-row">
+              <input v-model="p.name" placeholder="产品名称" style="flex: 2" />
+              <input v-model.number="p.quantity" type="number" style="width: 80px" />
+              <input v-model="p.unit" placeholder="单位" style="width: 60px" />
+              <button
+                class="btn-del"
+                @click="form.products.splice(index, 1)"
+                v-if="form.products.length > 1"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="upload-section">
+            <div class="section-header">
+              <h4>📁 上传材料</h4>
+              <button class="btn-add-text" @click="addNewAttachment">+ 添加材料</button>
+            </div>
+
+            <div v-for="(item, index) in attachments" :key="index" class="upload-row">
+              <select v-model="item.category" class="category-dropdown">
+                <option v-for="cat in Object.values(AttachmentCategory)" :key="cat" :value="cat">
+                  {{ cat }}
+                </option>
+              </select>
+
+              <div class="file-picker">
+                <input
+                  type="file"
+                  :id="'file-' + index"
+                  class="hidden-file-input"
+                  @change="handleFileSelect($event, index)"
+                />
+                <label :for="'file-' + index" class="file-box">
+                  {{ item.fileName || '点击选择本地文件' }}
+                </label>
+              </div>
+
+              <button class="btn-del" @click="attachments.splice(index, 1)">✕</button>
+            </div>
+          </div>
+
+          <div class="task-extraction-section">
+            <div class="section-header">
+              <h4>⚙️ 工序参考</h4>
+              <button class="btn-ai-extract" @click="handleAIExtract">✨ 智能填充参考</button>
+            </div>
+
+            <div class="extraction-container">
+              <textarea
+                ref="autoTextarea"
+                v-model="extractionText"
+                class="auto-scaling-textarea"
+                placeholder="在此输入工艺说明，供审单员后续提取工序使用..."
+                @input="adjustHeight"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-ghost" @click="isDraftBoxOpen = true">
+            📂 草稿箱 ({{ draftList.length }})
+          </button>
+
+          <div class="right-actions">
+            <button class="btn-secondary" @click="saveToDraft">保存草稿</button>
+            <button class="btn-primary" @click="handleSubmit">提交申请</button>
+          </div>
+        </div>
+      </div>
+
+      <Transition name="fade">
+        <div v-if="isDraftBoxOpen" class="modal-overlay draft-z-index">
+          <div class="modal-container draft-modal-width">
+            <div class="modal-header">
+              <h3>本地草稿箱</h3>
+              <button class="close-btn" @click="isDraftBoxOpen = false">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div v-if="draftList.length === 0" class="empty-tip">暂无草稿</div>
+              <div
+                v-for="(draft, index) in draftList"
+                :key="index"
+                class="draft-item"
+                @click="loadDraft(draft)"
+              >
+                <div class="draft-info">
+                  <p class="draft-name">{{ draft._draftName }}</p>
+                  <p class="draft-sub">
+                    {{ draft.customer || '空客户' }} / {{ draft.orderId || '空单号' }}
+                  </p>
+                </div>
+                <button class="btn-del-mini" @click.stop="deleteDraft(index)">删除</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </div>
+  </Transition>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import {
+  type IOrder,
+  Priority,
+  AuditStatus,
+  OrderStage,
+  AttachmentCategory,
+  type IAttachmentItem,
+  type IProductItem,
+} from '@/types/Order'
+
+// 定义草稿特有的扩展接口
+interface IDraft extends Partial<IOrder> {
+  _draftName: string
+  _extractionText?: string
+}
+
+const emit = defineEmits<{ (e: 'submitted', order: IOrder): void }>()
+
+// --- 响应式状态 ---
+const isOpen = ref(false)
+const isDraftBoxOpen = ref(false)
+const draftList = ref<IDraft[]>([])
+const attachments = ref<IAttachmentItem[]>([])
+const extractionText = ref('')
+const autoTextarea = ref<HTMLTextAreaElement | null>(null)
+
+// 初始表单构造函数
+const getInitialForm = () => ({
+  customer: '',
+  orderId: '',
+  deadline: '',
+  priority: Priority.Normal,
+  versionTag: '',
+  remark: '',
+  products: [{ name: '', quantity: 0, unit: 'pcs' }] as IProductItem[],
+})
+
+const form = reactive(getInitialForm())
+
+// --- UI & 逻辑处理 ---
+const adjustHeight = () => {
+  const el = autoTextarea.value
+  if (el) {
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+}
+
+const handleAIExtract = () => {
+  extractionText.value = '1. 原材料采购\n2. 基础冲压\n3. CNC精密加工\n4. 表面喷涂\n5. 质检与包装'
+  nextTick(() => adjustHeight())
+}
+
+const addNewProductLine = () => form.products.push({ name: '', quantity: 0, unit: 'pcs' })
+const addNewAttachment = () =>
+  attachments.value.push({ category: AttachmentCategory.OrderInfo, fileName: '' })
+
+const handleFileSelect = (event: Event, index: number) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file && attachments.value[index]) {
+    attachments.value[index].fileName = file.name
+    attachments.value[index].file = file
+    target.value = ''
+  }
+}
+
+// --- 生命周期控制 ---
+const open = () => {
+  Object.assign(form, getInitialForm())
+  attachments.value = []
+  extractionText.value = ''
+  isOpen.value = true
+  nextTick(() => adjustHeight())
+}
+
+const close = () => {
+  isOpen.value = false
+}
+
+defineExpose({ open, close })
+
+// --- 草稿逻辑 ---
+onMounted(() => {
+  const saved = localStorage.getItem('order_tracker_drafts')
+  if (saved) draftList.value = JSON.parse(saved)
+})
+
+const saveToDraft = () => {
+  const newDraft: IDraft = {
+    ...JSON.parse(JSON.stringify(form)),
+    _draftName: `草稿 ${new Date().toLocaleString()}`,
+    _extractionText: extractionText.value,
+    attachments: attachments.value,
+  }
+  draftList.value.unshift(newDraft)
+  localStorage.setItem('order_tracker_drafts', JSON.stringify(draftList.value))
+}
+
+const loadDraft = (draft: IDraft) => {
+  const data = JSON.parse(JSON.stringify(draft))
+  attachments.value = data.attachments || []
+  extractionText.value = data._extractionText || ''
+  delete data._draftName
+  delete data._extractionText
+  Object.assign(form, data)
+  isDraftBoxOpen.value = false
+  nextTick(() => adjustHeight())
+}
+
+const deleteDraft = (index: number) => {
+  draftList.value.splice(index, 1)
+  localStorage.setItem('order_tracker_drafts', JSON.stringify(draftList.value))
+}
+
+/**
+ * 核心提交逻辑
+ * 生成严格符合 IOrder 接口的对象，并向上传递
+ */
+const handleSubmit = () => {
+  // 基础校验
+  if (!form.customer || !form.orderId || !form.deadline) {
+    alert('请填写必填项 (*)')
+    return
+  }
+
+  // 2. 构造 IOrder 实体
+  const finalOrder: IOrder = {
+    orderId: form.orderId,
+    customer: form.customer,
+    versionTag: form.versionTag || 'V1.0',
+    deadline: form.deadline,
+    attachments: [...attachments.value],
+    products: [...form.products],
+    remark: form.remark,
+    proposedTask: extractionText.value,
+    subTasks: [], // 初始为空，待审核通过后由审核员拆解
+    stage: OrderStage.Audit,
+    priority: form.priority as Priority,
+    auditStatus: AuditStatus.Pending,
+    auditLogs: [
+      {
+        time: new Date().toLocaleString().replace(/\//g, '-'), // 格式化时间
+        operator: '申报系统', // 实际开发可从用户信息 Store 获取
+        action: '提交申请',
+        comment: '初始订单录入',
+      },
+    ],
+  }
+
+  // 3. 发射事件并关闭
+  emit('submitted', finalOrder)
+  close()
+}
+</script>
+
+<style scoped>
+/* 样式保持原样，确保 UI 一致性 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-container {
+  background: white;
+  width: 720px;
+  max-height: 92vh;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+.modal-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.full-width {
+  grid-column: span 2;
+}
+.req {
+  color: #ef4444;
+  margin-left: 2px;
+}
+.form-item label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+.form-item input,
+.form-item select,
+.form-item textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 24px 0 12px;
+}
+.product-row,
+.upload-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.auto-scaling-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  resize: none;
+  background: #fafafa;
+  line-height: 1.6;
+}
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-ghost {
+  background: #f3f4f6;
+  color: #4b5563;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.btn-add-text {
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+.btn-del {
+  color: #9ca3af;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+.btn-del:hover {
+  color: #ef4444;
+}
+.draft-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.draft-item:hover {
+  background: #f0f7ff;
+  border-color: #bfdbfe;
+}
+.draft-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+.draft-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+.draft-z-index {
+  z-index: 1100;
+}
+.draft-modal-width {
+  width: 400px;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
