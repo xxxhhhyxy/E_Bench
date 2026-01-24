@@ -47,7 +47,7 @@
 
     <section class="panel todo-panel">
       <div class="panel-header flex-between clickable" @click="toggleCollapse('todo')">
-        <h3 class="text-todo">
+        <h3>
           📝 个人待办事项 ({{ pendingTodos.length }})
           <span class="collapse-hint">{{ collapseState.todo ? '点击展开' : '点击折叠' }}</span>
         </h3>
@@ -152,7 +152,6 @@
 import { ref, computed, reactive } from 'vue'
 import OrderDetail from './OrderDetail.vue'
 import { AuditStatus, OrderStage, Priority, ProcessStage, type IOrder } from '@/types/Order'
-
 import { AlertSeverity, AlertStatus, type IAlert } from '@/types/Alert'
 
 // --- 接口定义 ---
@@ -182,7 +181,7 @@ const formatTimestamp = (date: Date = new Date()): string => {
   return `${Y}-${M}-${D} ${h}:${m}:${s}`
 }
 
-// --- 模拟数据 (匹配 IOrder 接口) ---
+// --- 模拟数据 ---
 const orders = ref<IOrder[]>([
   {
     orderId: 'ORD-2026-CATL-001',
@@ -192,16 +191,8 @@ const orders = ref<IOrder[]>([
     priority: Priority.High,
     auditStatus: AuditStatus.Approved,
     auditLogs: [
-      {
-        time: '2026-01-01',
-        operator: '泥人张',
-        action: '提交审批',
-      },
-      {
-        time: '2026-01-02',
-        operator: '审核佬',
-        action: '通过审批',
-      },
+      { time: '2026-01-01', operator: '泥人张', action: '提交审批' },
+      { time: '2026-01-02', operator: '审核佬', action: '通过审批' },
     ],
     subTasks: [
       {
@@ -249,7 +240,6 @@ const allAlerts = computed(() => {
   const list: Array<IAlert & { _order: IOrder }> = []
   orders.value.forEach((o) => {
     o.subTasks?.forEach((t) => {
-      // 仅显示未解决(resolved_at为空)的预警
       t.alerts?.filter((a) => !a.resolved_at).forEach((a) => list.push({ ...a, _order: o }))
     })
   })
@@ -288,14 +278,12 @@ const completeTodo = (id: number) => {
 
 const handleAck = (alertItem: IAlert) => {
   alertItem.resolved_at = formatTimestamp()
-  console.log(`预警已确认: ${alertItem.P_ID} at ${alertItem.resolved_at}`)
 }
 
 const handleTodo = (todoItem: ITodo) => {
   console.log('正在执行任务:', todoItem.content)
 }
 
-// --- 搜索与监控 ---
 const filteredOrders = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return orders.value.filter(
@@ -373,9 +361,6 @@ const bringToFront = (id: string) => (zIndexMap[id] = ++topZ)
 .text-danger {
   color: #e53e3e;
 }
-.text-todo {
-  color: #6366f1;
-}
 
 .standard-table {
   width: 100%;
@@ -450,9 +435,6 @@ const bringToFront = (id: string) => (zIndexMap[id] = ++topZ)
   color: #fff;
 }
 
-.todo-panel {
-  border-left: 6px solid #6366f1;
-}
 .risk-lamp {
   width: 12px;
   height: 12px;
