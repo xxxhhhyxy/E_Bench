@@ -55,11 +55,7 @@
                     <span class="file-cat">{{ file.category }}</span>
                     <span class="file-name">{{ file.fileName }}</span>
                   </div>
-                  <button 
-                    v-if="file.file" 
-                    class="btn-download-mini" 
-                    @click="downloadFile(file)"
-                  >
+                  <button v-if="file.file" class="btn-download-mini" @click="downloadFile(file)">
                     下载文件
                   </button>
                 </div>
@@ -96,7 +92,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { IOrder, IAttachmentItem } from '@/types/Order'
-import { useOrderStore } from '@/stores/orderStore'
+import { useOrderStore } from '@/stores/OrderStore'
 
 const props = defineProps<{
   order: IOrder | null
@@ -125,17 +121,17 @@ defineExpose({ open, close })
  */
 const downloadFile = (item: IAttachmentItem) => {
   if (!item.file) return
-  
+
   // 创建指向内存中文件的 URL
   const url = URL.createObjectURL(item.file)
   const link = document.createElement('a')
   link.href = url
   link.download = item.fileName
-  
+
   // 执行模拟点击下载
   document.body.appendChild(link)
   link.click()
-  
+
   // 善后：移除临时节点并释放内存
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
@@ -148,7 +144,7 @@ const handleApprove = () => {
 
   if (confirm(`确定通过订单 ${props.order.orderId} 吗？`)) {
     // 传递 auditComment 给 store 以便记录日志
-    store.approveOrder(props.order.orderId) 
+    store.approveOrder(props.order.orderId)
     close()
   }
 }
@@ -402,7 +398,8 @@ button {
 }
 
 /* 优先级配色 */
-.pri-High, .pri-Urgent {
+.pri-High,
+.pri-Urgent {
   color: #ef4444;
   font-weight: bold;
 }

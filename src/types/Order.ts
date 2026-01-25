@@ -1,5 +1,7 @@
 // src/types/order.ts
 
+import type { IProcess } from './Process'
+
 /** 预警严重程度 */
 export enum AlertSeverity {
   Critical = '严重', // 严重：通常意味着生产停滞
@@ -9,19 +11,18 @@ export enum AlertSeverity {
 /**
  * 预警事件类别
  */
-export enum AlertType{
-MATERIAL_MISSING='关键料缺失',
-ETA_SLIP='到料ETA晚于计划开工',
-STEP_DELAY='工序未按计划开始/完成',
-OUTSOURCE_OVERDUE='外发超期',
-DUE_DATE_RISK='交期风险',
-SCHEDULE_CONFLICT='排期冲突',
+export enum AlertType {
+  MATERIAL_MISSING = '关键料缺失',
+  ETA_SLIP = '到料ETA晚于计划开工',
+  STEP_DELAY = '工序未按计划开始/完成',
+  OUTSOURCE_OVERDUE = '外发超期',
+  DUE_DATE_RISK = '交期风险',
+  SCHEDULE_CONFLICT = '排期冲突',
 }
-export enum AlertStatus
-{
-  active='激活',
-  acknowledge='已知',
-  resolved='解决'
+export enum AlertStatus {
+  active = '激活',
+  acknowledge = '已知',
+  resolved = '解决',
 }
 /** * 预警事件记录
  */
@@ -32,7 +33,7 @@ export interface IAlert {
   reason: string // 触发预警的具体原因
   triggered_at: string // 触发时间点
   resolved_at: string // 解决时间点
-  AlertStatus:AlertStatus
+  AlertStatus: AlertStatus
 }
 
 /** * 订单优先级（决定生产/审核的先后顺序）
@@ -66,42 +67,11 @@ export interface IAuditLog {
   comment?: string
 }
 
-/** 操作记录接口 */
-export interface IOrderLog {
-  time: string
-  process: string
-  operator: string
-}
-
-/** * 单个工序（子任务）的状态
- */
-export enum ProcessStage {
-  NotStart = '待命', //工序仍未开始
-  InProgress = '进行中', //工序进行中
-  Blocked = '警告', //工序暂停，需要处理警告事件
-  Done = '已完成', //工序完成
-}
-//订单的子任务/单个工序
-export interface IProcess {
-  P_Name: string //工序名称
-  P_ID: string //工序ID（考虑承袭订单号之后衍生出独有命名标准）
-  owner: string //责任人
-  input: string //该工序需要的材料
-  output: string //该工序的产出
-  pre_start: string //计划开始时间
-  pre_end: string //计划结束时间
-  act_start: string //实际开始时间
-  act_end: string //实际结束时间
-  ProcessStage: ProcessStage //工序的状态
-  alerts?: IAlert[] // OrderTracker 关注的预警
-  logs?: IOrderLog[] // 生产日志：记录“活是怎么干的” (用于查看详情弹窗)
-}
-
 /** * 单个工序的状态
  */
 export enum OrderStage {
   Audit = '待审核', //处于审核中
-  OnGoing='正常运行',//
+  OnGoing = '正常运行', //
   Alert = '警告', //工序暂停，需要处理警告事件
   Completed = '已完成', //工序完成
 }
@@ -112,7 +82,7 @@ export enum AttachmentCategory {
   Packaging = '产品包装指示单',
   ProductCard = '成品指示卡',
   Delivery = '送货单',
-  Others='其他',
+  Others = '其他',
 }
 
 /** 附件条目接口 */
@@ -137,9 +107,9 @@ export interface IOrder {
 
   // --- 详细内容 ---
   products?: IProductItem[] // 包含的产品清单（一单多货）
-  remark?: string // 客户下单时的备注（下单人填写的特殊要求）
+  remark?: string // 客户下单时的备注或者特殊要求
   bomRequirement?: string[] //原材料
-  subTasks?: IProcess[] //拆分出的子任务
+  subTasks?: IProcess[] //拆分出的子任务/工序
 
   // --- 生产与时效 ---
   stage: OrderStage //该订单的大状态

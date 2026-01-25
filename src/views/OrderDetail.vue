@@ -153,13 +153,9 @@
 </template>
 
 <script setup lang="ts">
-import {
-  AlertSeverity,
-  ProcessStage,
-  type IAttachmentItem,
-  type IOrder,
-  type IProcess,
-} from '@/types/Order'
+import { AlertSeverity } from '@/types/Alert'
+import { type IAttachmentItem, type IOrder } from '@/types/Order'
+import { ProcessStage, type IProcess } from '@/types/Process'
 import { ref, reactive, computed } from 'vue'
 
 /**

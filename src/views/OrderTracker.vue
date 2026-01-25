@@ -151,7 +151,8 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import OrderDetail from './OrderDetail.vue'
-import { AuditStatus, OrderStage, Priority, ProcessStage, type IOrder } from '@/types/Order'
+import { AuditStatus, OrderStage, Priority, type IOrder } from '@/types/Order'
+import { ProcessStage } from '@/types/Process'
 import { AlertSeverity, AlertStatus, type IAlert } from '@/types/Alert'
 
 // --- 接口定义 ---
@@ -214,7 +215,7 @@ const orders = ref<IOrder[]>([
             reason: '切削主轴负载过载，已触发自动停机',
             triggered_at: '2026-01-24 08:30:15',
             resolved_at: '',
-            AlertStatus: AlertStatus.active,
+            status: AlertStatus.active,
           },
         ],
       },

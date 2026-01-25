@@ -35,8 +35,18 @@
             <td>{{ order.priority }}</td>
 
             <td>
-              <button class="link-btn">编辑</button>
+              <div class="action-btns">
+                <button class="link-btn" @click="handleView(order)">查看</button>
+
+                <button class="link-btn btn-delete" @click="handleDelete(order.orderId)">
+                  删除
+                </button>
+              </div>
             </td>
+          </tr>
+
+          <tr v-if="orderStore.pendingOrders.length === 0">
+            <td colspan="6" class="empty-placeholder">暂无待审核订单，请点击上方“新建订单”</td>
           </tr>
         </tbody>
       </table>
@@ -50,29 +60,46 @@
 import { ref } from 'vue'
 import { type IOrder, AuditStatus } from '@/types/Order'
 import OrderCreator from '@/views/OrderCreator.vue'
-// 导入 Pinia Store
-import { useOrderStore } from '@/stores/orderStore'
+import { useOrderStore } from '@/stores/OrderStore'
 
-// 初始化 Store 实例
+// 初始化 Store
 const orderStore = useOrderStore()
 
 // 引用 OrderCreator 组件实例
 const orderCreatorRef = ref<InstanceType<typeof OrderCreator> | null>(null)
 
 /**
- * 核心逻辑：处理儿子组件 (OrderCreator) 提交后的行为
- * @param newOrder 从 OrderCreator 传回的完整 IOrder 对象
+ * 逻辑：处理查看
+ * 将当前的 order 对象传给子组件的 open 方法
+ */
+const handleView = (order: IOrder) => {
+  if (orderCreatorRef.value) {
+    // 这里的 open 需要在 OrderCreator 内部支持接收参数
+    orderCreatorRef.value.open(order)
+  }
+}
+
+/**
+ * 逻辑：处理删除
+ */
+const handleDelete = (orderId: string) => {
+  if (confirm(`确定要删除订单 ${orderId} 吗？此操作不可撤销。`)) {
+    // 调用 Store 的删除 Action
+    orderStore.deleteOrder(orderId)
+    console.log('订单已从全局审核池移除:', orderId)
+  }
+}
+
+/**
+ * 核心逻辑：处理子组件提交后的行为
  */
 const onOrderSubmitted = (newOrder: IOrder) => {
-  // 关键改动：将数据推送到全局 Store，而不是仅保留在当前页面
-  // 这样当 ReviewInbox 页面打开时，它能立即从 Store 读到这个新单子
   orderStore.addOrder(newOrder)
-
   console.log('申报成功，订单已发送至全局审核池:', newOrder.orderId)
 }
 
 /**
- * 样式工具：根据审核状态返回对应的 CSS 类名
+ * 样式工具：返回对应的 CSS 类名
  */
 const getStatusClass = (status?: AuditStatus): string => {
   if (!status) return ''
@@ -86,7 +113,6 @@ const getStatusClass = (status?: AuditStatus): string => {
 </script>
 
 <style scoped>
-/* 样式部分保持不变 */
 .uploader-container {
   padding: 32px;
   max-width: 1200px;
@@ -132,6 +158,31 @@ const getStatusClass = (status?: AuditStatus): string => {
   background: #fee2e2;
   color: #991b1b;
 }
+
+.action-btns {
+  display: flex;
+  gap: 12px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.btn-delete {
+  color: #ef4444;
+}
+.btn-delete:hover {
+  color: #b91c1c;
+}
+
 .btn-primary {
   background: #2563eb;
   color: white;
@@ -140,12 +191,15 @@ const getStatusClass = (status?: AuditStatus): string => {
   border: none;
   cursor: pointer;
   font-weight: 500;
+  transition: background 0.2s;
 }
-.link-btn {
-  background: none;
-  border: none;
-  color: #2563eb;
-  cursor: pointer;
-  font-size: 14px;
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.empty-placeholder {
+  text-align: center;
+  color: #9ca3af;
+  padding: 40px !important;
 }
 </style>

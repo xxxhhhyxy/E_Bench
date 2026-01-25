@@ -1,5 +1,7 @@
 // src/types/Machine.ts
-import type { IOrder, ISubTask } from './order'
+
+import type { IOrder } from './Order'
+import type { IProcess } from './Process'
 
 /**
  * 机器状态
@@ -20,7 +22,7 @@ export interface IMachineLog {
 
   // 核心引用： access 整个订单和具体子任务
   orderContext: IOrder // 保存当时订单的快照或引用
-  subTaskContext: ISubTask // 具体的工序信息
+  subTaskContext: IProcess // 具体的工序信息
 
   operator: string // 执行人
   note?: string // 机器异常说明或加工备注
@@ -38,7 +40,7 @@ export interface IMachine {
   // 当前作业上下文：直接 access 整个 Order
   // 当机器 Busy 时，我们可以通过 currentOrder 访问客户、截止日期、所有附件等
   currentOrder?: IOrder
-  currentSubTask?: ISubTask
+  currentSubTask?: IProcess
 
   // 历史追溯：包含所有处理过的订单历史
   taskHistory: IMachineLog[]

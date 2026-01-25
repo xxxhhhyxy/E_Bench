@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { type IOrder, AuditStatus } from '@/types/Order'
-import { useOrderStore } from '@/stores/orderStore'
+import { useOrderStore } from '@/stores/OrderStore'
 import AuditBench from './AuditBench.vue' // 确保组件导入
 
 const orderStore = useOrderStore()
