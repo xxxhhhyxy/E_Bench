@@ -78,14 +78,14 @@
       <section class="detail-section">
         <h4 class="section-title">⚙️ 执行工序追踪</h4>
         <div
-          v-for="task in order.subTasks"
+          v-for="task in order.processes"
           :key="task.P_ID"
           class="full-task-card"
           :style="getTaskBorderStyle(task)"
         >
           <div class="task-header-row">
             <span class="t-name-large">{{ task.P_Name }}</span>
-            <span class="t-stage-tag" :class="task.ProcessStage">{{ task.ProcessStage }}</span>
+            <span class="t-stage-tag" :class="task.processStage">{{ task.processStage }}</span>
           </div>
 
           <div class="task-attribute-grid">
@@ -230,17 +230,17 @@ const displayedAuditLogs = computed(() => {
 const getMixedLogs = (task: IProcess): IMixedLog[] => {
   const mixed: IMixedLog[] = []
   task.logs?.forEach((l) =>
-    mixed.push({ time: l.time, operator: l.operator, process: l.process, type: 'log' }),
+    mixed.push({ time: l.time, operator: l.operator, process: l.action, type: 'log' }),
   )
   task.alerts?.forEach((a) => {
     if (a.triggered_at)
       mixed.push({
         time: a.triggered_at,
         severity: a.severity,
-        reason: a.reason,
+        reason: a.message,
         type: 'alert_start',
       })
-    if (a.resolved_at) mixed.push({ time: a.resolved_at, reason: a.reason, type: 'alert_end' })
+    if (a.resolved_at) mixed.push({ time: a.resolved_at, reason: a.message, type: 'alert_end' })
   })
   if (task.act_start)
     mixed.push({ time: task.act_start, process: '工序启动', type: 'status_change' })
@@ -250,14 +250,14 @@ const getMixedLogs = (task: IProcess): IMixedLog[] => {
 
 // --- 风险与样式逻辑 ---
 const isTaskAlerting = (task: IProcess) =>
-  task.ProcessStage !== ProcessStage.Done &&
+  task.processStage !== ProcessStage.Done &&
   (task.alerts?.filter((a) => !a.resolved_at).length || 0) > 0
 
-const hasActiveAlert = computed(() => props.order.subTasks?.some((t) => isTaskAlerting(t)))
+const hasActiveAlert = computed(() => props.order.processes?.some((t) => isTaskAlerting(t)))
 
 const globalRiskClass = computed(() => {
   const activeAlerts =
-    props.order.subTasks?.flatMap((t) => t.alerts?.filter((a) => !a.resolved_at) || []) || []
+    props.order.processes?.flatMap((t) => t.alerts?.filter((a) => !a.resolved_at) || []) || []
   return activeAlerts.some((a) => a.severity === AlertSeverity.Critical)
     ? 'bg-critical'
     : 'bg-warning'

@@ -25,8 +25,9 @@ export enum AlertStatus {
 export interface IAlert {
   orderId: string //出自哪个订单？
   P_ID: string //出自哪个工序？
+  type: AlertType //预警事件类别
   severity: AlertSeverity //紧急程度
-  reason: string // 触发预警的具体原因
+  message: string // 触发预警的具体原因
   triggered_at: string // 触发时间点
   resolved_at: string // 解决时间点
   status: AlertStatus

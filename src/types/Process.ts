@@ -1,9 +1,9 @@
 import type { IAlert } from './Alert'
 
-/** 操作记录接口 */
+/** 工序记录 */
 export interface IProcessLog {
   time: string
-  process: string
+  action: string
   operator: string
 }
 
@@ -26,7 +26,7 @@ export interface IProcess {
   pre_end: string //计划结束时间
   act_start: string //实际开始时间
   act_end: string //实际结束时间
-  ProcessStage: ProcessStage //工序的状态
+  processStage: ProcessStage //工序的状态
   alerts?: IAlert[] // OrderTracker 关注的预警
   logs?: IProcessLog[] // 生产日志：记录“活是怎么干的” (用于查看详情弹窗)
 }

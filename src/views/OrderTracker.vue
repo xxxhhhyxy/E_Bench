@@ -28,7 +28,7 @@
               </td>
               <td class="id-font">{{ item.orderId }}</td>
               <td class="text-left">
-                <span class="task-tag">{{ item.P_ID }}</span> {{ item.reason }}
+                <span class="task-tag">{{ item.P_ID }}</span> {{ item.message }}
               </td>
               <td class="time-font">{{ item.triggered_at }}</td>
               <td class="ops">
@@ -153,7 +153,7 @@ import { ref, computed, reactive } from 'vue'
 import OrderDetail from './OrderDetail.vue'
 import { AuditStatus, OrderStage, Priority, type IOrder } from '@/types/Order'
 import { ProcessStage } from '@/types/Process'
-import { AlertSeverity, AlertStatus, type IAlert } from '@/types/Alert'
+import { AlertSeverity, AlertStatus, AlertType, type IAlert } from '@/types/Alert'
 
 // --- 接口定义 ---
 interface ITodo {
@@ -195,7 +195,7 @@ const orders = ref<IOrder[]>([
       { time: '2026-01-01', operator: '泥人张', action: '提交审批' },
       { time: '2026-01-02', operator: '审核佬', action: '通过审批' },
     ],
-    subTasks: [
+    processes: [
       {
         P_ID: 'CNC-26-01',
         P_Name: 'CNC加工',
@@ -206,13 +206,14 @@ const orders = ref<IOrder[]>([
         pre_end: '2026-01-25',
         act_start: '2026-01-21',
         act_end: '',
-        ProcessStage: ProcessStage.Blocked,
+        processStage: ProcessStage.Blocked,
         alerts: [
           {
             orderId: 'ORD-2026-CATL-001',
             P_ID: 'CNC-26-01',
+            type: AlertType.MATERIAL_MISSING,
             severity: AlertSeverity.Critical,
-            reason: '切削主轴负载过载，已触发自动停机',
+            message: '切削主轴负载过载，已触发自动停机',
             triggered_at: '2026-01-24 08:30:15',
             resolved_at: '',
             status: AlertStatus.active,
@@ -240,7 +241,7 @@ const pendingTodos = computed(() => todoList.value.filter((t) => !t.done))
 const allAlerts = computed(() => {
   const list: Array<IAlert & { _order: IOrder }> = []
   orders.value.forEach((o) => {
-    o.subTasks?.forEach((t) => {
+    o.processes?.forEach((t) => {
       t.alerts?.filter((a) => !a.resolved_at).forEach((a) => list.push({ ...a, _order: o }))
     })
   })
@@ -264,7 +265,7 @@ const generateTodo = (alertItem: IAlert): void => {
     id: Date.now(),
     orderId: alertItem.orderId,
     P_ID: alertItem.P_ID,
-    content: `[生产指令] 处理预警: ${alertItem.reason}`,
+    content: `[生产指令] 处理预警: ${alertItem.message}`,
     duration: { days: 0, hours: 2 },
     done: false,
   }
@@ -293,7 +294,8 @@ const filteredOrders = computed(() => {
 })
 
 const getRiskColor = (order: IOrder) => {
-  const alerts = order.subTasks?.flatMap((t) => t.alerts?.filter((a) => !a.resolved_at) || []) || []
+  const alerts =
+    order.processes?.flatMap((t) => t.alerts?.filter((a) => !a.resolved_at) || []) || []
   if (alerts.some((a) => a.severity === AlertSeverity.Critical)) return '#f56c6c'
   if (alerts.some((a) => a.severity === AlertSeverity.Warn)) return '#e6a23c'
   return '#67c23a'
