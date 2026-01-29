@@ -5,7 +5,7 @@ import { type IOrder, AuditStatus } from '@/types/Order'
 export const useOrderStore = defineStore('order', () => {
   // 1. 三个独立的订单数组状态
   const pendingOrders = ref<IOrder[]>([]) // 待审核
-  const reviewedOrders = ref<IOrder[]>([]) // 已通过
+  const approvedOrders = ref<IOrder[]>([]) // 已通过
   const rejectedOrders = ref<IOrder[]>([]) // 已拒绝
 
   /**
@@ -24,7 +24,7 @@ export const useOrderStore = defineStore('order', () => {
     // 过滤待审核数组
     pendingOrders.value = pendingOrders.value.filter((o) => o.orderId !== orderId)
     // 过滤已通过数组
-    reviewedOrders.value = reviewedOrders.value.filter((o) => o.orderId !== orderId)
+    approvedOrders.value = approvedOrders.value.filter((o) => o.orderId !== orderId)
     // 过滤已拒绝数组
     rejectedOrders.value = rejectedOrders.value.filter((o) => o.orderId !== orderId)
 
@@ -33,7 +33,7 @@ export const useOrderStore = defineStore('order', () => {
 
   /**
    * 审核通过操作
-   * 从 pendingOrders 移动到 reviewedOrders
+   * 从 pendingOrders 移动到 approvedOrders
    */
   const approveOrder = (orderId: string) => {
     const index = pendingOrders.value.findIndex((o) => o.orderId === orderId)
@@ -54,7 +54,7 @@ export const useOrderStore = defineStore('order', () => {
         })
 
         // 移入已通过数组
-        reviewedOrders.value.unshift(order)
+        approvedOrders.value.unshift(order)
       }
     }
   }
@@ -88,7 +88,7 @@ export const useOrderStore = defineStore('order', () => {
 
   return {
     pendingOrders,
-    reviewedOrders,
+    approvedOrders,
     rejectedOrders,
     addOrder,
     deleteOrder, // 导出删除方法

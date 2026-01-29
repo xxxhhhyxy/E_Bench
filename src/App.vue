@@ -67,6 +67,7 @@ const handleLogout = () => {
             <RouterLink to="/order-tracker">订单追踪</RouterLink>
             <RouterLink to="/data-uploader">数据上传</RouterLink>
             <RouterLink to="/review-inbox">审核中心</RouterLink>
+            <RouterLink to="/dispatch-center">派单中心</RouterLink>
           </div>
           <div class="nav-right">
             <span class="user-info">管理员：{{ loginForm.username }}</span>

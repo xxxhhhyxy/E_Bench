@@ -43,7 +43,7 @@
               <th @click="handleSort('applyTime')">申请时间 {{ getSortIcon('applyTime') }}</th>
               <th @click="handleSort('applicant')">申请人 {{ getSortIcon('applicant') }}</th>
               <th v-if="currentTab === 'processed'" @click="handleSort('auditStatus')">
-                审核状态 {{ getSortIcon('auditStatus') }}
+                审核结果 {{ getSortIcon('auditStatus') }}
               </th>
               <th class="op-column">操作</th>
             </tr>
@@ -103,7 +103,7 @@ const selectedOrder = ref<IOrder | null>(null)
 // --- 核心：汇总三个数组作为全量数据源 ---
 const allOrders = computed(() => [
   ...orderStore.pendingOrders,
-  ...orderStore.reviewedOrders,
+  ...orderStore.approvedOrders,
   ...orderStore.rejectedOrders,
 ])
 

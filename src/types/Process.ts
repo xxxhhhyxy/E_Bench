@@ -15,6 +15,12 @@ export enum ProcessStage {
   Blocked = '警告', //工序暂停，需要处理警告事件
   Done = '已完成', //工序完成
 }
+export enum WorkstationType {
+  type1,
+  type2,
+  type3,
+}
+
 //订单的子任务/单个工序
 export interface IProcess {
   P_Name: string //工序名称
@@ -22,6 +28,7 @@ export interface IProcess {
   owner: string //责任人
   input: string //该工序需要的材料
   output: string //该工序的产出
+  workstation_type: WorkstationType
   pre_start: string //计划开始时间
   pre_end: string //计划结束时间
   act_start: string //实际开始时间
